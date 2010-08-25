@@ -5,6 +5,12 @@
  * Copyright 2009 Ken Shirriff
  * http://arcfn.com
  */
+ /* This is a test version of the code, modified for the Tiny44 for the PARTS
+  * BrushBot project.  In this version, the receive code is enabled
+  * but currently not working since the timers are not correctly coded
+  * yet.
+  * Scott Dixon
+  */
 
 #include "IRremoteBB.h"
 

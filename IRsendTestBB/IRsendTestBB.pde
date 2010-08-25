@@ -5,6 +5,11 @@
  * Copyright 2009 Ken Shirriff
  * http://arcfn.com
  */
+ /* Modified to run on Tiny44 for the PARTS brushbot project.  
+  * This is a transmit only version of the code and it currently
+  * works for sending Sony remote codes.
+  * Scott Dixon
+  */
 
 #include "IRremoteBB.h"
 
