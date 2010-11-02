@@ -7,4 +7,6 @@ This repository contains the code for doing IR communications for the boards des
 
 For more information about this project, see the project web site: <http://colab.portlandrobotics.org/>
 
-The current code base consists of Arduino sketches using an adapted core for the ATTiny44 MCU.  The necessary Arduino hardware files are under the arduino_brushbot subdirectory.
+The current code base consists of Arduino sketches using an adapted core for the ATTiny44 MCU.  
+
+The necessary hardware core files are in the partsSwarmHardware project.  Check that out into your Arduino hardware subdirectory.
