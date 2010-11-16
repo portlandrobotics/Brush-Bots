@@ -19,7 +19,7 @@
 
 volatile irparams_t irparams;
 
-#if MCU==attiny84
+#if MCU==attiny84||MCU==attiny44
 bool init_done = false;
 volatile uint16_t tick_downcounter;
 // from datasheet -- many 16 bit registers in the Tiny44 share a common temp register, so we need to access
@@ -304,7 +304,7 @@ void IRsend::sendRC6(unsigned long data, int nbits)
 void IRsend::mark(int time) {
   // Sends an IR mark for the specified number of microseconds.
   // The mark output is modulated at the PWM frequency.
-#if MCU==attiny84
+#if MCU==attiny84||MCU==attiny44
   TCCR1A |= _BV(COM1A1) | _BV(COM1B1);
 #else
   TCCR2A |= _BV(COM2B1); // Enable pin 3 PWM output
@@ -316,7 +316,7 @@ void IRsend::mark(int time) {
 void IRsend::space(int time) {
   // Sends an IR space for the specified number of microseconds.
   // A space is no output, so the PWM output is disabled.
-#if MCU==attiny84
+#if MCU==attiny84||MCU==attiny44
   TCCR1A &= ~(_BV(COM1A1) | _BV(COM1B1));
 #else
   TCCR2A &= ~(_BV(COM2B1)); // Disable pin 3 PWM output
@@ -336,7 +336,7 @@ void IRsend::enableIROut(int khz) {
   // A few hours staring at the ATmega documentation and this will all make sense.
   // See my Secrets of Arduino PWM at http://arcfn.com/2009/07/secrets-of-arduino-pwm.html for details.
 
-#if MCU==attiny84
+#if MCU==attiny84||MCU==attiny44
   init_ir(khz);
 #else
   // Disable the Timer2 Interrupt (which is used for receiving IR)
@@ -366,7 +366,7 @@ IRrecv::IRrecv(int recvpin)
 
 // initialization
 void IRrecv::enableIRIn() {
-#if MCU==attiny84
+#if MCU==attiny84||MCU==attiny44
   init_ir(38);
 #else
   // setup pulse clock timer interrupt
@@ -412,7 +412,7 @@ void IRrecv::blink13(int blinkflag)
 // As soon as a SPACE gets long, ready is set, state switches to IDLE, timing of SPACE continues.
 // As soon as first MARK arrives, gap width is recorded, ready is cleared, and new logging starts
 
-#if MCU==attiny84
+#if MCU==attiny84||MCU==attiny44
 ISR(TIM1_OVF_vect)
 {
   if (tick_downcounter) { // used for non-blocking delayMicroseconds
