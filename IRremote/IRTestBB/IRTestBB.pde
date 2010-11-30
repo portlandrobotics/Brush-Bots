@@ -40,7 +40,7 @@ void setup()
   pinMode(MOTB, OUTPUT);
 
 #ifndef SEND_TEST
-//  irrecv.enableIRIn();
+  irrecv.enableIRIn();
 #endif
 }
 

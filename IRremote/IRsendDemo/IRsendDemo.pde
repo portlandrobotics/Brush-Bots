@@ -6,7 +6,7 @@
  * http://arcfn.com
  */
 
-#include <IRremote.h>
+#include "IRremote.h"
 
 IRsend irsend;
 IRrecv irrecv(IR_RX);

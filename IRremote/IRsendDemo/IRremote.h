@@ -110,7 +110,7 @@ public:
 
 // Some useful constants
 
-#if MCU==attiny84
+#if MCU==attiny84||MCU=attiny44
 #define USECPERTICK 26  // microseconds per clock interrupt tick
 #else
 #define USECPERTICK 50  // microseconds per clock interrupt tick
