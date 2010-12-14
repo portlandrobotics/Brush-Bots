@@ -6,8 +6,7 @@
  * http://arcfn.com
  */
 
-#include "brushbot.h"
-#include <IRremote.h>
+#include "IRremote.h"
 
 IRsend irsend;
 IRrecv irrecv(IR_RX);
@@ -33,8 +32,10 @@ IRCODE ourcode;
 
 unsigned long send_time;
 unsigned long toggle_time;
+unsigned long change_time;
+unsigned long receive_time;
 uint8_t cur_color;
-uint8_t neighbors[32];
+uint32_t neighbors;
 
 void set_color(int color)
 {
@@ -62,9 +63,9 @@ void set_color(int color)
 
 void setup()
 {
-  randomSeed(analogRead(6));
-  ourcode.fields.rand_id = random(1, 32);
-  ourcode.fields.color = random(1, 4);
+  //randomSeed(analogRead(2) ^ analogRead(3));
+  ourcode.fields.rand_id = 0; //random(1, 32);
+  ourcode.fields.color = IR_BOTH; //random(1, 4);
   pinMode(RED_LED, OUTPUT);
   pinMode(GREEN_LED, OUTPUT);
   pinMode(MOTA, OUTPUT);
@@ -80,64 +81,81 @@ void setup()
   irrecv.enableIRIn(); // Start the receiver
   digitalWrite(RED_LED, LOW);
   set_color(ourcode.fields.color);
-  send_time = millis();
+  toggle_time = send_time = millis();
+}
+
+void pick_rand_color()
+{
+  do
+  {
+    ourcode.fields.color = (micros() >> 3) & 0x03;
+  }
+  while (!ourcode.fields.color);
 }
 
 void loop() {
   int i;
   IRCODE othercode;
-  
   if (millis() > send_time)
   {
     irsend.sendSony(ourcode.data, 12); // robot's id, a count of known neighbors, and the current color
-    send_time = millis() + random(200, 500);
-    //delay(100);
+    send_time = millis() + 500; //random(200, 500);
+    delay(100);
   }
+  
   if (irrecv.decode(&results)) 
-  { // received a code
+  { 
+    // received a code
     if (results.bits == 12) 
     {
-      othercode.data = results.value;
-      if (othercode.data != ourcode.data) // not our code
+      receive_time = millis();
+      if (!ourcode.fields.rand_id) // we don't have an id yet
       {
-        if (othercode.fields.color == ourcode.fields.color) // the colors are the same, so change it
+        ourcode.fields.rand_id = (1 + (micros() >> 3)) & 0x1f; // time we receive first code is kind-of-random, so use it as our id (must be >= 1)
+        pick_rand_color();
+      }
+      othercode.data = results.value;
+      if (othercode.fields.rand_id && (othercode.data != ourcode.data)) // not our code, must be a neighbor
+      {
+        i = othercode.fields.rand_id & 0x1f;
+        if (othercode.fields.color != ourcode.fields.color) // the colors are the same, so change it
         {
-          ourcode.fields.color++;
-          ourcode.fields.color &= 0x03;
-          if (!ourcode.fields.color)
-            ourcode.fields.color++;
+          if (i > ourcode.fields.rand_id)  // take dominant unit's color (larger id is dominant)
+          {
+            ourcode.fields.color = othercode.fields.color;
+          }
         }
-        else if (othercode.fields.rand_id > ourcode.fields.rand_id)  // take dominant unit's color
+        if (!(neighbors & (1 << i))) // have not seen this neighbor before
         {
-          ourcode.fields.color = othercode.fields.color;
-        }
-        if (!neighbors[othercode.fields.rand_id])
-        {
-          neighbors[othercode.fields.rand_id] = millis()/1000; // time we saw this one last
+          neighbors |= 1 << i;  // remember their id
           ourcode.fields.num_neighbors++;
-          ourcode.fields.num_neighbors &= 0x1f;
+          toggle_time = 0; // make it change right now
         }
       }
     }
     irrecv.resume(); // receive next value
   }
+
+  // is it time to change the LEDs?
   if (millis() > toggle_time)
   {
-    toggle_time = millis() + 1000 / (ourcode.fields.num_neighbors + 1);
+    toggle_time = millis() + 500 / (2 * ourcode.fields.num_neighbors + 1);
     if (cur_color != IR_BLACK)
       set_color(IR_BLACK);
     else
       set_color(ourcode.fields.color);
   }
-  for (i = 0; i < 32; i++)
+  
+  // it's been 5 seconds since we saw a neighbor, so forget about all of them
+  if (millis() > (receive_time + 5000))
   {
-    if (neighbors[i] && ((millis()/1000 - neighbors[i]) > 5)) // we have not seen this one for at least 5 seconds
+    receive_time = millis();
+    if (ourcode.fields.num_neighbors)
+      ourcode.fields.num_neighbors--;
+    else  // we have no neighbors, so pick a new color
     {
-      neighbors[i] = 0;  // forget them
-      if (ourcode.fields.num_neighbors)
-        ourcode.fields.num_neighbors--;
-      else  // we have no neighbors, so pick a new color
-        ourcode.fields.color = random(1, 4); 
+      neighbors = 0;
+      pick_rand_color();
     }
   }
 }
