@@ -86,11 +86,12 @@ void setup()
 
 void pick_rand_color()
 {
+  uint8_t old_color = ourcode.fields.color;
   do
   {
     ourcode.fields.color = (micros() >> 3) & 0x03;
   }
-  while (!ourcode.fields.color);
+  while (!ourcode.fields.color && (ourcode.fields.color == old_color));
 }
 
 void loop() {
@@ -99,7 +100,7 @@ void loop() {
   if (millis() > send_time)
   {
     irsend.sendSony(ourcode.data, 12); // robot's id, a count of known neighbors, and the current color
-    send_time = millis() + 500; //random(200, 500);
+    send_time = millis() + 500 + ourcode.fields.rand_id * 13; //random(200, 500);
     delay(100);
   }
   
@@ -147,7 +148,7 @@ void loop() {
   }
   
   // it's been 5 seconds since we saw a neighbor, so forget about all of them
-  if (millis() > (receive_time + 5000))
+  if (millis() > (receive_time + 2500))
   {
     receive_time = millis();
     if (ourcode.fields.num_neighbors)
@@ -156,6 +157,7 @@ void loop() {
     {
       neighbors = 0;
       pick_rand_color();
+      toggle_time = 0; // make it change now
     }
   }
 }
