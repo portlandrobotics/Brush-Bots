@@ -87,9 +87,17 @@ void setup()
 void pick_rand_color()
 {
   uint8_t old_color = ourcode.fields.color;
+  int i = 0;
   do
   {
     ourcode.fields.color = (micros() >> 3) & 0x03;
+    delay(ourcode.fields.color); // insert some pseudorandom time delay so micros() doesn't keep returning same value when truncated to 2 bits
+    i++;
+    if (i > 4)
+    {
+      ourcode.fields.color ^= 2;
+      break;
+    }
   }
   while (!ourcode.fields.color && (ourcode.fields.color == old_color));
 }
@@ -109,15 +117,15 @@ void loop() {
     // received a code
     if (results.bits == 12) 
     {
-      receive_time = millis();
-      if (!ourcode.fields.rand_id) // we don't have an id yet
+      while (!ourcode.fields.rand_id) // we don't have an id yet
       {
-        ourcode.fields.rand_id = (1 + (micros() >> 3)) & 0x1f; // time we receive first code is kind-of-random, so use it as our id (must be >= 1)
+        ourcode.fields.rand_id = (micros() >> 3) & 0x1f; // time we receive first code is kind-of-random, so use it as our id (must be >= 1)
         pick_rand_color();
       }
       othercode.data = results.value;
       if (othercode.fields.rand_id && (othercode.data != ourcode.data)) // not our code, must be a neighbor
       {
+        receive_time = millis();
         i = othercode.fields.rand_id & 0x1f;
         if (othercode.fields.color != ourcode.fields.color) // the colors are the same, so change it
         {
