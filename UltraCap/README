@@ -1,0 +1,29 @@
+README for PARTS Brush-Bot UltraCap directory
+
+Material in the directory is copyright (C) 2011 Tim Brandon
+Distributed under the GNU GENERAL PUBLIC LICENSE (GPL) Version 2 (June 1991).
+See the "COPYING" file distributed with this software for more information.
+
+
+2011.01.24
+----------
+
+Here are some experimental source files for running a brushbot using an
+ultracapacitor. The new thing about the ultracapacitor is that the voltage is
+always changing linearly whereas a battery has a slowly decreasing voltage over
+time. To keep the motor running at constant speed this code measures the voltage
+on the ultracapacitor and adjusts the PWM duty cycle to compensate.
+
+The compensation is done in the motorVoltage.c file with this line:
+    PWM = (Vm * ADCW) >> 8;
+Here (ADCW) is the value of the internal reference (1.1 volts) as read by the
+ADC using the ultracapacitor voltage as a reference, therefore the (ADCW) value
+goes _up_ as the ultracapacitor voltage drops, so multiplying by (ADCW)
+stretches the PWM compensating for the loss of voltage.
+
+--
+
+To compile this, change the motorVoltage/ directory and type
+  make
+This assumes a unix-like tool setup. Tested on Debian w/gcc 4.4.2-9
+
