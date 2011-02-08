@@ -34,8 +34,10 @@ unsigned long send_time;
 unsigned long toggle_time;
 unsigned long change_time;
 unsigned long receive_time;
+unsigned long new_color_time;
 uint8_t cur_color;
 uint32_t neighbors;
+bool dominant; 
 
 void set_color(int color)
 {
@@ -82,6 +84,7 @@ void setup()
   digitalWrite(RED_LED, LOW);
   set_color(ourcode.fields.color);
   toggle_time = send_time = millis();
+  dominant = true;
 }
 
 void pick_rand_color()
@@ -93,17 +96,21 @@ void pick_rand_color()
     ourcode.fields.color = (micros() >> 3) & 0x03;
     delay(ourcode.fields.color); // insert some pseudorandom time delay so micros() doesn't keep returning same value when truncated to 2 bits
     i++;
-    if (i > 4)
+    if (i > 4)  // this is taking too long to pick a non-black, different color; quit
     {
       ourcode.fields.color ^= 2;
+      if (!ourcode.fields.color)
+        ourcode.fields.color = IR_RED;
       break;
     }
   }
-  while (!ourcode.fields.color && (ourcode.fields.color == old_color));
+  while (!ourcode.fields.color || (ourcode.fields.color == old_color));
+  new_color_time = millis() + 5000; // make the dominant unit pick a new color at least every 5 seconds
 }
 
 void loop() {
-  int i;
+  unsigned int i;
+  uint32_t mask;
   IRCODE othercode;
   if (millis() > send_time)
   {
@@ -117,28 +124,39 @@ void loop() {
     // received a code
     if (results.bits == 12) 
     {
+      othercode.data = results.value;
       while (!ourcode.fields.rand_id) // we don't have an id yet
       {
         ourcode.fields.rand_id = (micros() >> 3) & 0x1f; // time we receive first code is kind-of-random, so use it as our id (must be >= 1)
+        if (ourcode.fields.rand_id == othercode.fields.rand_id)
+          ourcode.fields.rand_id ^= 0x0b;
         pick_rand_color();
       }
-      othercode.data = results.value;
       if (othercode.fields.rand_id && (othercode.data != ourcode.data)) // not our code, must be a neighbor
       {
         receive_time = millis();
         i = othercode.fields.rand_id & 0x1f;
-        if (othercode.fields.color != ourcode.fields.color) // the colors are the same, so change it
+        if (othercode.fields.color != ourcode.fields.color) // the colors are not the same
         {
           if (i > ourcode.fields.rand_id)  // take dominant unit's color (larger id is dominant)
           {
             ourcode.fields.color = othercode.fields.color;
+            dominant = false;
           }
         }
-        if (!(neighbors & (1 << i))) // have not seen this neighbor before
+        mask = (((uint32_t)1) << i);
+        if (!(neighbors & mask)) // have not seen this neighbor before
         {
-          neighbors |= 1 << i;  // remember their id
+          neighbors |= mask;  // remember their id
           ourcode.fields.num_neighbors++;
           toggle_time = 0; // make it change right now
+        }
+        if (dominant)  // we're the dominant one (for now)
+        {
+          if (millis() > new_color_time) // it's been a while since we picked a new color, so do it
+          {
+            pick_rand_color();
+          }
         }
       }
     }
