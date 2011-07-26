@@ -1,8 +1,13 @@
 /*
- * IRremote: IRsendDemo - demonstrates sending IR codes with IRsend
- * An IR LED must be connected to Arduino PWM pin 3.
- * Version 0.1 July, 2009
- * Copyright 2009 Ken Shirriff
+ * IRLife: Brushbot Demo Program for PARTS Brushbot Controllers
+ *
+ * Repository for the whole project:
+ * https://github.com/portlandrobotics
+ * This file:
+ * https://github.com/portlandrobotics/Brush-Bots/tree/master/IRremote/IRLife
+ *
+ * derived from code by:
+ * Copyright 2009 Ken Shirriff, Version 0.1 July, 2009
  * http://arcfn.com
  */
 
